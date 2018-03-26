@@ -1,0 +1,42 @@
+Option Explicit
+'Declarations
+
+Dim cboBenchmarkCurrent As ComboBox
+Dim cboECFLocSelect As ComboBox
+
+
+Public Sub LocSelect()
+
+
+With shECF.cboECFLocSelect
+    If .Value = "UK" Then
+        Cells(9, 1).Value = "Payroll Number"
+        Cells(20, 3).Value = "UK"
+        
+        Dim myrng As Range
+        Dim MyLR As Integer
+        
+        shECF.cboBenchmarkCurrent.ListFillRange = ""
+        shECF.cboBenchmarkCurrent.Value = ""
+        
+        MyLR = shJobTitle.Cells(Rows.Count, 22).End(xlUp).Row
+
+      Set myrng = shJobTitle.Range("V2:V" & MyLR)
+      shECF.cboBenchmarkCurrent.ListFillRange = myrng.Address(External:=True)
+      
+        
+    ElseIf shECF.cboECFLocSelect.Value <> "UK" Then
+        Cells(9, 1).Value = "Position ID"
+        Cells(20, 3).Value = "" ' Fix this to change to location from cboECFLocSelect
+        
+        shECF.cboBenchmarkCurrent.ListFillRange = ""
+        shECF.cboBenchmarkCurrent.Value = ""
+        
+        MyLR = shJobTitle.Cells(Rows.Count, 1).End(xlUp).Row
+        
+        Set myrng = shJobTitle.Range("A2:A" & MyLR)
+        
+    End If
+End With
+    
+End Sub
