@@ -1,42 +1,249 @@
+' On Open ***************************************************************************
+
+Private Sub Workbook_Open()
+
+' Fill ECF Effective Date range
+Dim datesLR As Integer
+
+datesLR = shDDI.Cells(Rows.Count, 25).End(xlUp).Row
+shECF.cboECFEffDate.ListFillRange = shDDI.Range("Y2:Y" & datesLR).Address(external:=True)
+
+' Fill Change Type Dropdowns
+Dim chgLR As Integer
+Dim ADPLR As Integer
+chgLR = shCRCats.Cells(Rows.Count, 1).End(xlUp).Row
+With shECF
+    .cboChg1.ListFillRange = shCRCats.Range("A8:A" & chgLR).Address(external:=True)
+    .cboChg2.ListFillRange = shCRCats.Range("A8:A" & chgLR).Address(external:=True)
+    .cboChg3.ListFillRange = shCRCats.Range("A8:A" & chgLR).Address(external:=True)
+End With
+
+' Fill ECF Status Dropdowns
+Dim statusLR As Integer
+statusLR = shDDI.Cells(Rows.Count, 1).End(xlUp).Row
+shECF.cboCurStatus.ListFillRange = shDDI.Range("A2:A" & statusLR).Address(external:=True)
+
+' +++ ADD STATUS cboNewStatus WHEN CREATED ++++++++++++
+
+' Fill NAICS Code Dropdowns
+Dim naicsLR As Integer
+naicsLR = shDDI.Cells(Rows.Count, 9).End(xlUp).Row
+shECF.cboCurNAICS.ListFillRange = shDDI.Range("I2:I" & naicsLR).Address(external:=True)
+
+' +++ ADD NAICS cboNewNAICS WHEN CREATED +++++++++++
+
+End Sub
+
+' Module 1 ******************************************************************************
+
 Option Explicit
 'Declarations
-
 Dim cboBenchmarkCurrent As ComboBox
 Dim cboECFLocSelect As ComboBox
 
+' **THIS CONTROLS WHAT HAPPENS WHEN LOCATION IS SELECTED ********
 
 Public Sub LocSelect()
 
+Dim locRng As Range
+Dim locLR As Integer
+
+locLR = shDDI.Cells(Rows.Count, 3).End(xlUp).Row
+
+Set locRng = shDDI.Range("C2:C" & locLR)
 
 With shECF.cboECFLocSelect
+        .ListFillRange = locRng.Address(external:=True)
     If .Value = "UK" Then
         Cells(9, 1).Value = "Payroll Number"
         Cells(20, 3).Value = "UK"
-        
+        Cells(29, 3).Value = "NA"
+        shECF.cboCurNAICS.Enabled = False
+        shECF.cboCurNAICS.Visible = False
+        shECF.cboCurNAICS.Value = ""
+        shECF.lblNAICSNA.Visible = True
+        shECF.lblNAICSNA.Enabled = True
+                
+    ' Chooses UK or US Job list to fill "Benchmark Job Title" dropdown
+        Dim State As String
         Dim myrng As Range
-        Dim MyLR As Integer
-        
+        Dim mylr As Integer
         shECF.cboBenchmarkCurrent.ListFillRange = ""
         shECF.cboBenchmarkCurrent.Value = ""
-        
-        MyLR = shJobTitle.Cells(Rows.Count, 22).End(xlUp).Row
-
-      Set myrng = shJobTitle.Range("V2:V" & MyLR)
-      shECF.cboBenchmarkCurrent.ListFillRange = myrng.Address(External:=True)
-      
-        
-    ElseIf shECF.cboECFLocSelect.Value <> "UK" Then
+        mylr = shJobTitle.Cells(Rows.Count, 22).End(xlUp).Row
+        Set myrng = shJobTitle.Range("V2:V" & mylr)
+        shECF.cboBenchmarkCurrent.ListFillRange = myrng.Address(external:=True)
+    
+    ' Chooses UK listfillrange for "Home Department"
+        Dim UKHDrng As Range
+        Dim UKHDlr As Integer
+        Dim HDname As String
+        Dim x As Integer
+        UKHDlr = shLookupComp.Cells(Rows.Count, 4).End(xlUp).Row
+        Set UKHDrng = shLookupComp.Range("D3:D" & UKHDlr)
+        shECF.cboCurHomeDept.ListFillRange = UKHDrng.Address(external:=True)
+                
+    ' Fills "Business Unit" based on UK Home Department"      
+    ElseIf .Value <> "UK" Then
+        Cells(20, 3).Value = shECF.cboECFLocSelect.Value
         Cells(9, 1).Value = "Position ID"
-        Cells(20, 3).Value = "" ' Fix this to change to location from cboECFLocSelect
-        
+        shECF.cboCurNAICS.Enabled = True
+        shECF.cboCurNAICS.Visible = True
+        shECF.lblNAICSNA.Visible = False
+        shECF.lblNAICSNA.Enabled = False
         shECF.cboBenchmarkCurrent.ListFillRange = ""
         shECF.cboBenchmarkCurrent.Value = ""
-        
-        MyLR = shJobTitle.Cells(Rows.Count, 1).End(xlUp).Row
-        
-        Set myrng = shJobTitle.Range("A2:A" & MyLR)
-        
+        mylr = shJobTitle.Cells(Rows.Count, 1).End(xlUp).Row
+        Set myrng = shJobTitle.Range("A2:A" & mylr)
+        shECF.cboBenchmarkCurrent.ListFillRange = myrng.Address(external:=True)
     End If
 End With
-    
+End Sub
+
+' Controls *************************************************************************
+
+Private Sub cboBenchmarkCurrent_Change()
+Dim LR As Integer
+Dim curRow As Integer
+LR = shJobTitle.Cells(Rows.Count, 1).End(xlUp).Row
+For curRow = 2 To LR
+    If shJobTitle.Cells(curRow, 1).Value = cboBenchmarkCurrent.Value Then
+        shECF.Cells(22, 3).Value = shJobTitle.Cells(curRow, 2).Value
+        shECF.Cells(23, 3).Value = shJobTitle.Cells(curRow, 3).Value
+        shECF.Cells(24, 3).Value = shJobTitle.Cells(curRow, 4).Value
+        shECF.Cells(25, 3).Value = shJobTitle.Cells(curRow, 5).Value
+        shECF.Cells(26, 3).Value = shJobTitle.Cells(curRow, 7).Value
+        shECF.Cells(27, 3).Value = shJobTitle.Cells(curRow, 6).Value
+    Exit Sub
+    Else: End If
+Next curRow
+End Sub
+
+' Selects dropdown list for ADP Reason category for first change reason field
+Private Sub cboChg1_Change()
+Dim ClassificationLR As Integer
+Dim CompLR As Integer
+Dim DeptLR As Integer
+Dim FLSALR As Integer
+Dim JobLR As Integer
+' gets last row
+ClassificationLR = shCRCats.Cells(Rows.Count, 2).End(xlUp).Row
+CompLR = shCRCats.Cells(Rows.Count, 3).End(xlUp).Row
+DeptLR = shCRCats.Cells(Rows.Count, 4).End(xlUp).Row
+FLSALR = shCRCats.Cells(Rows.Count, 5).End(xlUp).Row
+JobLR = shCRCats.Cells(Rows.Count, 6).End(xlUp).Row
+' clears cboADP1 value and selects proper list fill range dependent on reason selection
+cboADP1.Value = ""
+ If cboChg1.Value = "Classification" Then
+    cboADP1.ListFillRange = shCRCats.Range("B8:B" & ClassificationLR).Address(external:=True)
+ ElseIf cboChg1.Value = "Compensation" Then
+    cboADP1.ListFillRange = shCRCats.Range("C8:C" & CompLR).Address(external:=True)
+ ElseIf cboChg1.Value = "Department" Then
+    cboADP1.ListFillRange = shCRCats.Range("D8:D" & DeptLR).Address(external:=True)
+ ElseIf cboChg1.Value = "FLSA" Then
+    cboADP1.ListFillRange = shCRCats.Range("E8:E" & FLSALR).Address(external:=True)
+ ElseIf cboChg1.Value = "Job" Then
+    cboADP1.ListFillRange = shCRCats.Range("F8:F" & JobLR).Address(external:=True)
+ ElseIf cboChg1.Value = "" Then
+    cboADP1.ListFillRange = ""
+End If
+
+End Sub
+
+' Selects dropdown list for ADP Reason category for first change reason field
+Private Sub cboChg2_Change()
+
+Dim ClassificationLR As Integer
+Dim CompLR As Integer
+Dim DeptLR As Integer
+Dim FLSALR As Integer
+Dim JobLR As Integer
+' gets last row
+ClassificationLR = shCRCats.Cells(Rows.Count, 2).End(xlUp).Row
+CompLR = shCRCats.Cells(Rows.Count, 3).End(xlUp).Row
+DeptLR = shCRCats.Cells(Rows.Count, 4).End(xlUp).Row
+FLSALR = shCRCats.Cells(Rows.Count, 5).End(xlUp).Row
+JobLR = shCRCats.Cells(Rows.Count, 6).End(xlUp).Row
+' clears cboADP2 value and selects proper list fill range dependent on reason selection
+cboADP2.Value = ""
+If cboChg2.Value = "Classification" Then
+    cboADP2.ListFillRange = shCRCats.Range("B8:B" & ClassificationLR).Address(external:=True)
+ ElseIf cboChg2.Value = "Compensation" Then
+    cboADP2.ListFillRange = shCRCats.Range("C8:C" & CompLR).Address(external:=True)
+ ElseIf cboChg2.Value = "Department" Then
+    cboADP2.ListFillRange = shCRCats.Range("D8:D" & DeptLR).Address(external:=True)
+ ElseIf cboChg2.Value = "FLSA" Then
+    cboADP2.ListFillRange = shCRCats.Range("E8:E" & FLSALR).Address(external:=True)
+ ElseIf cboChg2.Value = "Job" Then
+    cboADP2.ListFillRange = shCRCats.Range("F8:F" & JobLR).Address(external:=True)
+ ElseIf cboChg2.Value = "" Then
+    cboADP2.ListFillRange = ""
+End If
+End Sub
+
+
+' Selects dropdown list for ADP Reason category for first change reason field
+Private Sub cboChg3_Change()
+
+Dim ClassificationLR As Integer
+Dim CompLR As Integer
+Dim DeptLR As Integer
+Dim FLSALR As Integer
+Dim JobLR As Integer
+' gets last row
+ClassificationLR = shCRCats.Cells(Rows.Count, 2).End(xlUp).Row
+CompLR = shCRCats.Cells(Rows.Count, 3).End(xlUp).Row
+DeptLR = shCRCats.Cells(Rows.Count, 4).End(xlUp).Row
+FLSALR = shCRCats.Cells(Rows.Count, 5).End(xlUp).Row
+JobLR = shCRCats.Cells(Rows.Count, 6).End(xlUp).Row
+' clears cboADP2 value and selects proper list fill range dependent on reason selection
+cboADP3.Value = ""
+If cboChg3.Value = "Classification" Then
+    cboADP3.ListFillRange = shCRCats.Range("B8:B" & ClassificationLR).Address(external:=True)
+ ElseIf cboChg3.Value = "Compensation" Then
+    cboADP3.ListFillRange = shCRCats.Range("C8:C" & CompLR).Address(external:=True)
+ ElseIf cboChg3.Value = "Department" Then
+    cboADP3.ListFillRange = shCRCats.Range("D8:D" & DeptLR).Address(external:=True)
+ ElseIf cboChg3.Value = "FLSA" Then
+    cboADP3.ListFillRange = shCRCats.Range("E8:E" & FLSALR).Address(external:=True)
+ ElseIf cboChg3.Value = "Job" Then
+    cboADP3.ListFillRange = shCRCats.Range("F8:F" & JobLR).Address(external:=True)
+ ElseIf cboChg3.Value = "" Then
+    cboADP3.ListFillRange = ""
+End If
+End Sub
+
+
+' Chooses and fills "Business Unit" in C34 and G34
+Private Sub cboCurHomeDept_Change()
+Dim UKHDrng As Range
+Dim USHDrng As Range
+Dim UKHDlr As Long
+Dim USHDlr As Long
+Dim HDname As String
+Dim x As Long
+Dim y As Long
+UKHDlr = shLookupComp.Cells(Rows.Count, 4).Row
+USHDlr = shLookupComp.Cells(Rows.Count, 1).Row
+Set UKHDrng = shLookupComp.Range("D3:D" & UKHDlr)
+Set USHDrng = shLookupComp.Range("A3:A" & USHDlr)
+If cboECFLocSelect.Value <> "UK" Then
+    For x = 3 To USHDlr
+        If cboCurHomeDept.Value = shLookupComp.Cells(x, 1).Value Then
+            HDname = shLookupComp.Cells(x, 2).Value
+            shECF.Cells(34, 3).Value = HDname
+            End If
+    Next x
+ElseIf cboECFLocSelect.Value = UK Then
+    For y = 3 To UKHDlr
+        If cboCurHomeDept.Value = shLookupComp.Cells(y, 4) Then
+            HDname = shLookupComp.Cells(y, 5).Value
+            shECF.Cells(34, 3).Value = HDname
+        End If
+    Next y
+End If
+End Sub
+
+Private Sub cboECFLocSelect_Change()
+LocSelect
 End Sub
